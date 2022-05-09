@@ -24,8 +24,8 @@ func getDomain(zone string) string {
 	return strings.TrimSuffix(zone, ".")
 }
 
-func getHostname(zone, name string) string {
-	return strings.TrimSuffix(strings.TrimSuffix(name, zone), ".")
+func getHostname(domain, name string) string {
+	return strings.TrimSuffix(strings.TrimSuffix(strings.TrimSuffix(name, "."), domain), ".")
 }
 
 func (p *Provider) getApiHost() string {
@@ -271,12 +271,16 @@ func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []lib
 	var deleteRecords []libdns.Record
 
 	for _, record := range records {
-		for i, currentRecord := range currentRecords {
-			if currentRecord.Type == record.Type && getHostname(zone, currentRecord.Name) == getHostname(zone, record.Name) {
-				currentRecords = append(currentRecords[:i], currentRecords[i+1:]...)
-				deleteRecords = append(deleteRecords, currentRecord)
-				break
+		if record.ID == "" {
+			for i, currentRecord := range currentRecords {
+				if currentRecord.Type == record.Type && getHostname(domain, currentRecord.Name) == getHostname(domain, record.Name) && currentRecord.Value == record.Value {
+					currentRecords = append(currentRecords[:i], currentRecords[i+1:]...)
+					deleteRecords = append(deleteRecords, currentRecord)
+					break
+				}
 			}
+		} else {
+			deleteRecords = append(deleteRecords, record)
 		}
 	}
 
