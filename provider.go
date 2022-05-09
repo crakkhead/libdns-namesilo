@@ -1,6 +1,5 @@
 // Package namesilo implements a DNS record management client compatible
-// with the libdns interfaces for namesilo. TODO: This package is a
-// template only. Customize all godocs for actual implementation.
+// with the libdns interfaces for namesilo.
 package namesilo
 
 import (
@@ -15,12 +14,6 @@ import (
 
 	"github.com/libdns/libdns"
 )
-
-// TODO: Providers must not require additional provisioning steps by the callers; it
-// should work simply by populating a struct and calling methods on it. If your DNS
-// service requires long-lived state or some extra provisioning step, do it implicitly
-// when methods are called; sync.Once can help with this, and/or you can use a
-// sync.(RW)Mutex in your Provider struct to synchronize implicit provisioning.
 
 // Provider facilitates DNS record manipulation with namesilo.
 type Provider struct {
@@ -124,7 +117,7 @@ func (p *Provider) AppendRecords(ctx context.Context, zone string, records []lib
 		req_url := p.getApiHost() + "/dnsAddRecord?version=1&type=xml&key=" + p.APIToken + "&domain=" + domain + "&rrtype=" + record.Type + "&rrhost=" + host + "&rrvalue=" + record.Value + rrttl + rrdistance
 		req, err := http.NewRequest("GET", req_url, nil)
 		if err != nil {
-			return nil, fmt.Errorf("Request URL: " + p.getApiHost() + "/dnsAddRecord?version=1&type=xml&key=" + p.APIToken +
+			return nil, fmt.Errorf("Request error: " + p.getApiHost() + "/dnsAddRecord?version=1&type=xml&key=" + p.APIToken +
 				"&domain=" + domain + "&rrtype=" + record.Type + "&rrhost=" + host + "&rrvalue=" + record.Value + rrttl)
 		}
 
@@ -278,16 +271,12 @@ func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []lib
 	var deleteRecords []libdns.Record
 
 	for _, record := range records {
-		if record.ID == "" {
-			for i, currentRecord := range currentRecords {
-				if currentRecord.Type == record.Type && getHostname(zone, currentRecord.Name) == getHostname(zone, record.Name) && currentRecord.Value == record.Value {
-					currentRecords = append(currentRecords[:i], currentRecords[i+1:]...)
-					deleteRecords = append(deleteRecords, currentRecord)
-					break
-				}
+		for i, currentRecord := range currentRecords {
+			if currentRecord.Type == record.Type && getHostname(zone, currentRecord.Name) == getHostname(zone, record.Name) {
+				currentRecords = append(currentRecords[:i], currentRecords[i+1:]...)
+				deleteRecords = append(deleteRecords, currentRecord)
+				break
 			}
-		} else {
-			deleteRecords = append(deleteRecords, record)
 		}
 	}
 
